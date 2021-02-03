@@ -157,6 +157,7 @@ open class SnappingView: UIView {
     
     private struct Static {
         static let originAnimationKey = "SnappingView.originAnimation"
+        static let originEps: CGFloat = 1 / UIScreen.main.scale
     }
 
     private enum HeaderState: Equatable {
@@ -376,7 +377,10 @@ extension SnappingView: DrawerViewContentListener {
     {
         contentState = .normal
     
-        guard let limits = anchorLimits, origin > limits.lowerBound else { return }
+        guard let limits = anchorLimits, limits.contains(origin, eps: Static.originEps) else {
+            notifyDidEndUpdatingOrigin(with: .contentInteraction)
+            return
+        }
         
         /// Stop scrolling
         targetContentOffset.pointee = drawerViewContent.contentOffset
@@ -420,4 +424,10 @@ private class SnappingViewAnimationImpl: NSObject, SnappingViewAnimation, POPAni
         isDone = true
     }
     
+}
+
+private extension ClosedRange where Bound: FloatingPoint {
+    func contains(_ element: Bound, eps: Bound) -> Bool {
+        return element.isGreater(than: lowerBound, eps: eps) && element.isLess(than: upperBound, eps: eps)
+    }
 }
